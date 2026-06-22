@@ -6,43 +6,64 @@
 <title>Smart Room Controller</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, sans-serif; background: #f5f5f0; min-height: 100vh; padding: 2rem; color: #1a1a1a; }
-  .room { max-width: 720px; margin: 0 auto; }
-  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-  .room-name { font-size: 24px; font-weight: 600; }
-  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #1D9E75; display: inline-block; margin-right: 6px; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f0; min-height: 100vh; color: #1a1a1a; }
+
+  .app { display: grid; grid-template-columns: 340px 1fr; min-height: 100vh; }
+
+  /* ── LEFT PANEL ── */
+  .left { background: white; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; }
+
+  .assistant-header { padding: 1.5rem; border-bottom: 1px solid #e8e8e8; }
+  .assistant-name { font-size: 18px; font-weight: 600; margin-bottom: 2px; }
+  .assistant-sub { font-size: 12px; color: #888; }
+
+  .chat-box { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 10px; }
+
+  .msg { max-width: 90%; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.5; }
+  .msg.ai { background: #f0f0ec; color: #1a1a1a; align-self: flex-start; border-bottom-left-radius: 4px; }
+  .msg.user { background: #1a1a1a; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .msg.thinking { background: #f0f0ec; color: #999; align-self: flex-start; font-style: italic; }
+
+  .voice-area { padding: 1rem; border-top: 1px solid #e8e8e8; }
   .mic-btn {
-    display: flex; align-items: center; gap: 8px;
-    padding: 10px 20px; border-radius: 12px;
-    border: 1px solid #ccc; background: white;
-    font-size: 14px; font-weight: 500; color: #1a1a1a;
-    cursor: pointer; transition: all 0.2s;
+    width: 100%; padding: 14px; border-radius: 14px;
+    border: 1.5px solid #ddd; background: white;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: all 0.2s; color: #1a1a1a;
   }
-  .mic-btn:hover { background: #f0f0ec; }
+  .mic-btn:hover { background: #f5f5f0; }
   .mic-btn.listening { border-color: #D85A30; color: #D85A30; background: #FAECE7; animation: pulse 1.5s infinite; }
-  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(216,90,48,0.2)} 50%{box-shadow:0 0 0 6px rgba(216,90,48,0)} }
+  .mic-btn.speaking { border-color: #534AB7; color: #534AB7; background: #EEEDFE; }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(216,90,48,0.25)} 50%{box-shadow:0 0 0 8px rgba(216,90,48,0)} }
 
-  .voice-log {
-    background: #f0f0ec; border: 1px solid #ddd; border-radius: 8px;
-    padding: 12px 16px; font-size: 13px; color: #666;
-    min-height: 44px; margin-bottom: 1.5rem; transition: all 0.3s;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .voice-log.active { color: #1a1a1a; background: white; border-color: #aaa; }
+  .text-input-row { display: flex; gap: 8px; margin-top: 8px; }
+  .text-input-row input { flex: 1; padding: 10px 14px; border-radius: 10px; border: 1px solid #ddd; font-size: 13px; background: #f5f5f0; outline: none; }
+  .text-input-row input:focus { border-color: #aaa; background: white; }
+  .text-input-row button { padding: 10px 16px; border-radius: 10px; border: none; background: #1a1a1a; color: white; font-size: 13px; cursor: pointer; }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .quick-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 1rem 1rem; }
+  .chip { font-size: 11px; padding: 5px 10px; border-radius: 20px; border: 1px solid #e0e0e0; background: white; color: #555; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .chip:hover { border-color: #aaa; color: #1a1a1a; }
+
+  /* ── RIGHT PANEL ── */
+  .right { padding: 1.5rem; overflow-y: auto; }
+  .right-header { font-size: 20px; font-weight: 600; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 8px; }
+  .online-dot { width: 8px; height: 8px; border-radius: 50%; background: #1D9E75; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
 
   .device-card {
     background: white; border: 1px solid #e0e0e0; border-radius: 14px;
     padding: 1.25rem 1rem; cursor: pointer; transition: all 0.25s; position: relative;
   }
   .device-card:hover { border-color: #bbb; }
-  .device-card.on.light { background: #EEEDFE; border-color: #AFA9EC; }
-  .device-card.on.fan   { background: #E1F5EE; border-color: #5DCAA5; }
-  .device-card.on.ac    { background: #E6F1FB; border-color: #85B7EB; }
-  .device-card.on.tv    { background: #FAEEDA; border-color: #EF9F27; }
-  .device-card.on.heater{ background: #FAECE7; border-color: #F0997B; }
-  .device-card.on.music { background: #FBEAF0; border-color: #ED93B1; }
+  .device-card.on.light  { background: #EEEDFE; border-color: #AFA9EC; }
+  .device-card.on.fan    { background: #E1F5EE; border-color: #5DCAA5; }
+  .device-card.on.ac     { background: #E6F1FB; border-color: #85B7EB; }
+  .device-card.on.tv     { background: #FAEEDA; border-color: #EF9F27; }
+  .device-card.on.heater { background: #FAECE7; border-color: #F0997B; }
+  .device-card.on.music  { background: #FBEAF0; border-color: #ED93B1; }
 
   .device-icon { font-size: 28px; margin-bottom: 10px; display: block; }
   .device-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
@@ -65,72 +86,288 @@
   .device-card.on .toggle::after { transform: translateX(14px); }
 
   .slider-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
-  .slider-row label { font-size: 12px; color: #888; white-space: nowrap; }
+  .slider-row label { font-size: 11px; color: #888; white-space: nowrap; }
   .slider-row input[type=range] { flex: 1; accent-color: #378ADD; }
-  .slider-val { font-size: 12px; font-weight: 600; min-width: 30px; text-align: right; }
+  .slider-val { font-size: 11px; font-weight: 600; min-width: 28px; text-align: right; }
 
-  .fan-speed { margin-top: 8px; display: flex; gap: 6px; }
+  .fan-speed { margin-top: 8px; display: flex; gap: 5px; }
   .speed-btn { font-size: 11px; padding: 3px 8px; border-radius: 20px; border: 1px solid #ccc; background: transparent; cursor: pointer; color: #888; transition: all 0.15s; }
   .speed-btn.active { background: #1D9E75; border-color: #1D9E75; color: white; }
 
-  .section-label { font-size: 13px; color: #888; margin-bottom: 10px; font-weight: 500; }
-  .cmd-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip { font-size: 12px; padding: 6px 14px; border-radius: 20px; border: 1px solid #ddd; background: white; color: #666; cursor: pointer; transition: all 0.15s; }
-  .chip:hover { border-color: #aaa; color: #1a1a1a; }
-
   @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
   .fan-spinning { animation: spin 1.5s linear infinite; display: inline-block; }
+
+  .api-key-bar { background: #fff8e1; border: 1px solid #f0c040; border-radius: 10px; padding: 12px 16px; margin-bottom: 1.25rem; font-size: 13px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .api-key-bar input { flex: 1; min-width: 200px; padding: 7px 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 13px; font-family: monospace; }
+  .api-key-bar button { padding: 7px 14px; border-radius: 8px; border: none; background: #1a1a1a; color: white; font-size: 13px; cursor: pointer; white-space: nowrap; }
+
+  @media (max-width: 700px) {
+    .app { grid-template-columns: 1fr; }
+    .left { max-height: 55vh; }
+  }
 </style>
 </head>
 <body>
-<div class="room">
-  <div class="header">
-    <div>
-      <span class="status-dot"></span>
-      <span class="room-name">Living Room</span>
+<div class="app">
+  <!-- LEFT: AI Chat -->
+  <div class="left">
+    <div class="assistant-header">
+      <div class="assistant-name">🏠 ARIA</div>
+      <div class="assistant-sub">Smart Room Assistant · AI Powered</div>
     </div>
-    <button class="mic-btn" id="micBtn" onclick="toggleListening()">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-        <rect x="5" y="1" width="6" height="9" rx="3"/>
-        <path d="M3 8c0 2.76 2.24 5 5 5s5-2.24 5-5"/>
-        <line x1="8" y1="13" x2="8" y2="15"/>
-        <line x1="5" y1="15" x2="11" y2="15"/>
-      </svg>
-      <span id="micLabel">Tap to speak</span>
-    </button>
+
+    <div class="chat-box" id="chatBox">
+      <div class="msg ai">Hi! I'm ARIA, your smart room assistant. I can control your devices <em>and</em> answer any question you have — weather, general knowledge, anything. How can I help you?</div>
+    </div>
+
+    <div class="voice-area">
+      <button class="mic-btn" id="micBtn" onclick="toggleListening()">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="5" y="1" width="6" height="9" rx="3"/>
+          <path d="M3 8c0 2.76 2.24 5 5 5s5-2.24 5-5"/>
+          <line x1="8" y1="13" x2="8" y2="15"/>
+          <line x1="5" y1="15" x2="11" y2="15"/>
+        </svg>
+        <span id="micLabel">Hold to speak</span>
+      </button>
+      <div class="text-input-row">
+        <input type="text" id="textInput" placeholder="Or type your message..." onkeydown="if(event.key==='Enter')sendText()">
+        <button onclick="sendText()">Send</button>
+      </div>
+    </div>
+
+    <div class="quick-chips">
+      <span class="chip" onclick="handleInput('How are you?')">How are you?</span>
+      <span class="chip" onclick="handleInput('Turn on the fan')">Turn on fan</span>
+      <span class="chip" onclick="handleInput('What is the weather today?')">Weather today</span>
+      <span class="chip" onclick="handleInput('Turn off everything')">All off</span>
+      <span class="chip" onclick="handleInput('Tell me a joke')">Tell a joke</span>
+      <span class="chip" onclick="handleInput('Set AC to 22 degrees')">AC 22°C</span>
+      <span class="chip" onclick="handleInput('What time is it?')">What time is it?</span>
+      <span class="chip" onclick="handleInput('Set light brightness to 50%')">Lights 50%</span>
+    </div>
   </div>
 
-  <div class="voice-log" id="voiceLog">
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="flex-shrink:0">
-      <circle cx="8" cy="8" r="7"/><line x1="8" y1="5" x2="8" y2="8"/><circle cx="8" cy="11" r="0.5" fill="currentColor"/>
-    </svg>
-    <span id="voiceText">Say something like "Turn on the fan" or "Set lights to 70%"</span>
+  <!-- RIGHT: Device Panel -->
+  <div class="right">
+    <div class="api-key-bar">
+      <span>🔑</span>
+      <span style="color:#555">Enter your Gemini API key to enable AI chat (free at aistudio.google.com):</span>
+      <input type="password" id="apiKeyInput" placeholder="AIza..." />
+      <button onclick="saveKey()">Save</button>
+    </div>
+
+    <div class="right-header">
+      <div class="online-dot"></div>
+      Living Room
+    </div>
+    <div class="grid" id="deviceGrid"></div>
   </div>
-
-  <div class="grid" id="deviceGrid"></div>
-
-  <div class="section-label">Try these commands</div>
-  <div class="cmd-chips" id="chips"></div>
 </div>
 
 <script>
+// ── STATE ──
 const devices = [
   { id:'light', name:'Ceiling Light', icon:'💡', type:'light', on:true, brightness:80 },
-  { id:'fan', name:'Ceiling Fan', icon:'🌀', type:'fan', on:false, speed:'medium' },
-  { id:'ac', name:'Air Conditioner', icon:'❄️', type:'ac', on:false, temp:24 },
-  { id:'tv', name:'Television', icon:'📺', type:'tv', on:false },
-  { id:'heater', name:'Room Heater', icon:'🔥', type:'heater', on:false, temp:22 },
-  { id:'music', name:'Music System', icon:'🎵', type:'music', on:false, volume:50 },
+  { id:'fan',   name:'Ceiling Fan',   icon:'🌀', type:'fan',   on:false, speed:'medium' },
+  { id:'ac',    name:'Air Conditioner',icon:'❄️', type:'ac',   on:false, temp:24 },
+  { id:'tv',    name:'Television',    icon:'📺', type:'tv',    on:false },
+  { id:'heater',name:'Room Heater',   icon:'🔥', type:'heater',on:false, temp:22 },
+  { id:'music', name:'Music System',  icon:'🎵', type:'music', on:false, volume:50 },
 ];
 
-const cmds = [
-  'Turn on all lights','Turn off the fan','Set AC to 22 degrees',
-  'Turn on the TV','Set light brightness to 50%','Turn off everything',
-  'Fan speed high','Play some music','Set heater to 25 degrees',
-];
+let apiKey = localStorage.getItem('aria_api_key') || '';
+let listening = false, recognition = null, speaking = false;
+let chatHistory = [];
 
-let listening = false, recognition = null;
+if(apiKey) document.getElementById('apiKeyInput').value = apiKey;
 
+function saveKey() {
+  apiKey = document.getElementById('apiKeyInput').value.trim();
+  localStorage.setItem('aria_api_key', apiKey);
+  addMsg('ai', 'Gemini API key saved! I can now answer any question you ask — for free!');
+}
+
+// ── CHAT ──
+function addMsg(role, text) {
+  const box = document.getElementById('chatBox');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+function removeThinking() {
+  const t = document.querySelector('.msg.thinking');
+  if(t) t.remove();
+}
+
+// ── DEVICE CONTROL ──
+function getDeviceStatus(d) {
+  if(d.type==='light') return `On · ${d.brightness}%`;
+  if(d.type==='fan') return `On · ${d.speed}`;
+  if(d.type==='ac') return `Cooling · ${d.temp}°C`;
+  if(d.type==='music') return `Playing · ${d.volume}%`;
+  if(d.type==='heater') return `Heating · ${d.temp}°C`;
+  return 'On';
+}
+
+function tryDeviceCommand(cmd) {
+  const c = cmd.toLowerCase();
+  let result = null;
+
+  if(c.includes('turn off everything')||c.includes('off everything')||c.includes('all off')) {
+    devices.forEach(d=>d.on=false); renderDevices();
+    return 'All devices have been turned off.';
+  }
+  if(c.includes('turn on all')||c.includes('all on')||c.includes('turn on everything')) {
+    devices.forEach(d=>d.on=true); renderDevices();
+    return 'All devices are now on.';
+  }
+
+  const nameMap = {light:['light','lights'],fan:['fan'],ac:['ac','air conditioner','aircon'],tv:['tv','television'],heater:['heater'],music:['music','speaker','speakers']};
+
+  for(const d of devices) {
+    const aliases = nameMap[d.type]||[];
+    if(!aliases.some(a=>c.includes(a))) continue;
+
+    if(c.includes('turn on')||c.includes('switch on')||c.includes('on the')) {
+      d.on=true; renderDevices(); result=`${d.name} is now on.`;
+    } else if(c.includes('turn off')||c.includes('switch off')) {
+      d.on=false; renderDevices(); result=`${d.name} has been turned off.`;
+    }
+
+    const bMatch = c.match(/(\d+)\s*(%|percent)/);
+    if(bMatch && d.type==='light') { d.brightness=Math.min(100,parseInt(bMatch[1])); d.on=true; renderDevices(); result=`Light brightness set to ${d.brightness}%.`; }
+    if(bMatch && d.type==='music') { d.volume=Math.min(100,parseInt(bMatch[1])); d.on=true; renderDevices(); result=`Volume set to ${d.volume}%.`; }
+
+    const tMatch = c.match(/(\d+)\s*(°c|degree|degrees|°)/i);
+    if(tMatch && (d.type==='ac'||d.type==='heater')) { d.temp=parseInt(tMatch[1]); d.on=true; renderDevices(); result=`${d.name} set to ${d.temp}°C.`; }
+
+    if(d.type==='fan') {
+      if(c.includes(' high')) { d.speed='high'; d.on=true; renderDevices(); result='Fan speed set to high.'; }
+      else if(c.includes(' medium')) { d.speed='medium'; d.on=true; renderDevices(); result='Fan speed set to medium.'; }
+      else if(c.includes(' low')) { d.speed='low'; d.on=true; renderDevices(); result='Fan speed set to low.'; }
+    }
+  }
+  return result;
+}
+
+// ── AI RESPONSE ──
+async function getAIResponse(userMsg) {
+  if(!apiKey) {
+    return "Please enter your Gemini API key above to enable AI responses. Get it free at aistudio.google.com!";
+  }
+
+  const deviceState = devices.map(d => `${d.name}: ${d.on ? 'ON' : 'OFF'}`).join(', ');
+  const now = new Date().toLocaleString();
+
+  chatHistory.push({ role:'user', content: userMsg });
+
+  try {
+    const history = chatHistory.slice(-10);
+    const contents = history.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    }));
+    const systemPrompt = `You are ARIA, a friendly smart home assistant. Current time: ${now}. Room devices: ${deviceState}. Keep responses concise (1-3 sentences). Be warm, helpful, and conversational. If asked about weather, note you don't have live data but give general advice. You can discuss any topic.`;
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: contents
+      })
+    });
+    const data = await res.json();
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I had trouble understanding that.';
+    chatHistory.push({ role:'assistant', content: reply });
+    return reply;
+  } catch(e) {
+    return "I couldn't connect to the AI. Check your API key and internet connection.";
+  }
+}
+
+// ── MAIN HANDLER ──
+async function handleInput(text) {
+  if(!text.trim()) return;
+  addMsg('user', text);
+
+  // Try device command first
+  const deviceReply = tryDeviceCommand(text);
+  if(deviceReply) {
+    speak(deviceReply);
+    addMsg('ai', deviceReply);
+    return;
+  }
+
+  // Otherwise ask AI
+  const thinking = addMsg('thinking', 'Thinking...');
+  thinking.className = 'msg thinking';
+
+  const reply = await getAIResponse(text);
+  removeThinking();
+  addMsg('ai', reply);
+  speak(reply);
+}
+
+// ── TEXT INPUT ──
+function sendText() {
+  const input = document.getElementById('textInput');
+  const val = input.value.trim();
+  if(!val) return;
+  input.value = '';
+  handleInput(val);
+}
+
+// ── VOICE INPUT ──
+function toggleListening() {
+  if(listening) { stopListening(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR) { addMsg('ai', 'Voice recognition is not supported in this browser. Please use Chrome or Edge, or type your message.'); return; }
+
+  recognition = new SR();
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  recognition.onresult = e => {
+    const t = e.results[0][0].transcript;
+    stopListening();
+    handleInput(t);
+  };
+  recognition.onerror = () => { addMsg('ai', "I couldn't hear that clearly. Please try again."); stopListening(); };
+  recognition.onend = () => stopListening();
+  recognition.start();
+
+  listening = true;
+  document.getElementById('micBtn').classList.add('listening');
+  document.getElementById('micLabel').textContent = 'Listening... (click to stop)';
+}
+
+function stopListening() {
+  listening = false;
+  if(recognition) { try{recognition.stop()}catch(e){} recognition=null; }
+  document.getElementById('micBtn').classList.remove('listening');
+  document.getElementById('micLabel').textContent = 'Hold to speak';
+}
+
+// ── TEXT TO SPEECH ──
+function speak(text) {
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 1.05; utt.pitch = 1.05;
+  const voices = speechSynthesis.getVoices();
+  const preferred = voices.find(v => v.name.includes('Google') && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en'));
+  if(preferred) utt.voice = preferred;
+  utt.onstart = () => { document.getElementById('micBtn').classList.add('speaking'); document.getElementById('micLabel').textContent = 'Speaking...'; };
+  utt.onend = () => { document.getElementById('micBtn').classList.remove('speaking'); document.getElementById('micLabel').textContent = 'Hold to speak'; };
+  speechSynthesis.speak(utt);
+}
+speechSynthesis.onvoiceschanged = () => {};
+
+// ── DEVICE RENDER ──
 function renderDevices() {
   const grid = document.getElementById('deviceGrid');
   grid.innerHTML = devices.map(d => {
@@ -146,103 +383,19 @@ function renderDevices() {
     return `<div class="device-card ${d.type} ${d.on?'on':''}" onclick="toggleDevice('${d.id}')">
       <div class="toggle"></div>${fanIcon}
       <div class="device-name">${d.name}</div>
-      <div class="device-status">${d.on?getStatus(d):'Off'}</div>
+      <div class="device-status">${d.on?getDeviceStatus(d):'Off'}</div>
       ${extra}
     </div>`;
   }).join('');
 }
 
-function getStatus(d) {
-  if(d.type==='light') return `On · ${d.brightness}%`;
-  if(d.type==='fan') return `On · ${d.speed}`;
-  if(d.type==='ac') return `Cooling · ${d.temp}°C`;
-  if(d.type==='music') return `Playing · ${d.volume}%`;
-  if(d.type==='heater') return `Heating · ${d.temp}°C`;
-  return 'On';
-}
-
-function toggleDevice(id) {
-  const d = devices.find(x=>x.id===id);
-  d.on = !d.on;
-  showLog(d.on ? `${d.name} turned on` : `${d.name} turned off`);
-  renderDevices();
-}
-
+function toggleDevice(id) { const d=devices.find(x=>x.id===id); d.on=!d.on; renderDevices(); }
 function setBrightness(id,val) { const d=devices.find(x=>x.id===id); d.brightness=parseInt(val); renderDevices(); }
-function setFanSpeed(s) { const d=devices.find(x=>x.id==='fan'); d.speed=s; d.on=true; showLog(`Fan speed set to ${s}`); renderDevices(); }
+function setFanSpeed(s) { const d=devices.find(x=>x.id==='fan'); d.speed=s; d.on=true; renderDevices(); }
 function setTemp(id,val) { const d=devices.find(x=>x.id===id); d.temp=parseInt(val); renderDevices(); }
 function setVolume(val) { const d=devices.find(x=>x.id==='music'); d.volume=parseInt(val); renderDevices(); }
 
-function showLog(msg, active=true) {
-  document.getElementById('voiceText').textContent = msg;
-  document.getElementById('voiceLog').className = 'voice-log' + (active?' active':'');
-}
-
-function processCommand(cmd) {
-  const c = cmd.toLowerCase();
-  let acted = false;
-  if(c.includes('turn off everything')||c.includes('off everything')||c.includes('all off')) {
-    devices.forEach(d=>d.on=false); showLog('All devices turned off'); acted=true;
-  } else if(c.includes('turn on all')||c.includes('all on')) {
-    devices.forEach(d=>d.on=true); showLog('All devices turned on'); acted=true;
-  } else {
-    devices.forEach(d => {
-      const names = {light:['light','lights'],fan:['fan'],ac:['ac','air conditioner','air con','aircon'],tv:['tv','television'],heater:['heater'],music:['music','speaker']};
-      if(!(names[d.type]||[]).some(a=>c.includes(a))) return;
-      if(c.includes('turn on')||c.includes('switch on')) { d.on=true; showLog(`${d.name} turned on`); acted=true; }
-      else if(c.includes('turn off')||c.includes('switch off')) { d.on=false; showLog(`${d.name} turned off`); acted=true; }
-      const bMatch = c.match(/(\d+)\s*(%|percent)/);
-      if(bMatch&&d.type==='light') { d.brightness=Math.min(100,parseInt(bMatch[1])); d.on=true; showLog(`Light brightness set to ${d.brightness}%`); acted=true; }
-      if(bMatch&&d.type==='music') { d.volume=Math.min(100,parseInt(bMatch[1])); d.on=true; showLog(`Volume set to ${d.volume}%`); acted=true; }
-      const tMatch = c.match(/(\d+)\s*(°c|degree|degrees)/i);
-      if(tMatch&&(d.type==='ac'||d.type==='heater')) { d.temp=parseInt(tMatch[1]); d.on=true; showLog(`${d.name} set to ${d.temp}°C`); acted=true; }
-      if(d.type==='fan') {
-        if(c.includes('high')) { d.speed='high'; d.on=true; showLog('Fan speed set to high'); acted=true; }
-        else if(c.includes('medium')) { d.speed='medium'; d.on=true; showLog('Fan speed set to medium'); acted=true; }
-        else if(c.includes('low')) { d.speed='low'; d.on=true; showLog('Fan speed set to low'); acted=true; }
-      }
-    });
-  }
-  if(!acted) showLog(`Could not understand: "${cmd}". Try "Turn on the fan"`);
-  renderDevices();
-}
-
-function toggleListening() {
-  if(listening) { stopListening(); return; }
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR) { showLog('Voice not supported in this browser. Click a command chip below!'); return; }
-  recognition = new SR();
-  recognition.lang = 'en-US';
-  recognition.interimResults = true;
-  recognition.onresult = e => {
-    const t = Array.from(e.results).map(r=>r[0].transcript).join('');
-    showLog(`🎙 "${t}"`, true);
-    if(e.results[e.results.length-1].isFinal) { processCommand(t); stopListening(); }
-  };
-  recognition.onerror = () => { showLog('Could not hear clearly. Try again!'); stopListening(); };
-  recognition.onend = () => stopListening();
-  recognition.start();
-  listening = true;
-  document.getElementById('micBtn').classList.add('listening');
-  document.getElementById('micLabel').textContent = 'Listening...';
-  showLog('Listening... speak now', true);
-}
-
-function stopListening() {
-  listening = false;
-  if(recognition) { try{recognition.stop()}catch(e){} recognition=null; }
-  document.getElementById('micBtn').classList.remove('listening');
-  document.getElementById('micLabel').textContent = 'Tap to speak';
-}
-
-function renderChips() {
-  document.getElementById('chips').innerHTML = cmds.map(c=>
-    `<span class="chip" onclick="processCommand('${c}')">${c}</span>`
-  ).join('');
-}
-
 renderDevices();
-renderChips();
 </script>
 </body>
 </html>
