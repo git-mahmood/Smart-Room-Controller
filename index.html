@@ -315,7 +315,7 @@ async function handleInput(text) {
   const reply = await getAIResponse(text);
   removeThinking();
   addMsg('ai', reply);
-  speak(reply);
+  speakChunked(reply);
 }
 
 // ── TEXT INPUT ──
@@ -369,6 +369,22 @@ function speak(text) {
   utt.onstart = () => { document.getElementById('micBtn').classList.add('speaking'); document.getElementById('micLabel').textContent = 'Speaking...'; };
   utt.onend = () => { document.getElementById('micBtn').classList.remove('speaking'); document.getElementById('micLabel').textContent = 'Hold to speak'; };
   speechSynthesis.speak(utt);
+}
+
+function speakChunked(text) {
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+  const voices = speechSynthesis.getVoices();
+  const preferred = voices.find(v => v.name.includes('Google') && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en'));
+  sentences.forEach((sentence, i) => {
+    const utt = new SpeechSynthesisUtterance(sentence.trim());
+    utt.rate = 1.05; utt.pitch = 1.05;
+    if(preferred) utt.voice = preferred;
+    if(i === 0) utt.onstart = () => { document.getElementById('micBtn').classList.add('speaking'); document.getElementById('micLabel').textContent = 'Speaking...'; };
+    if(i === sentences.length - 1) utt.onend = () => { document.getElementById('micBtn').classList.remove('speaking'); document.getElementById('micLabel').textContent = 'Hold to speak'; };
+    speechSynthesis.speak(utt);
+  });
 }
 speechSynthesis.onvoiceschanged = () => {};
 
