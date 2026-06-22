@@ -1,104 +1,96 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Room Controller</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--font-sans); }
-  .room { padding: 1.5rem 0; max-width: 680px; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f0; min-height: 100vh; padding: 2rem; color: #1a1a1a; }
+  .room { max-width: 720px; margin: 0 auto; }
   .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-  .room-name { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+  .room-name { font-size: 24px; font-weight: 600; }
   .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #1D9E75; display: inline-block; margin-right: 6px; }
   .mic-btn {
     display: flex; align-items: center; gap: 8px;
-    padding: 10px 20px; border-radius: var(--border-radius-lg);
-    border: 0.5px solid var(--color-border-secondary);
-    background: var(--color-background-primary);
-    font-size: 14px; font-weight: 500; color: var(--color-text-primary);
+    padding: 10px 20px; border-radius: 12px;
+    border: 1px solid #ccc; background: white;
+    font-size: 14px; font-weight: 500; color: #1a1a1a;
     cursor: pointer; transition: all 0.2s;
   }
-  .mic-btn:hover { background: var(--color-background-secondary); }
+  .mic-btn:hover { background: #f0f0ec; }
   .mic-btn.listening { border-color: #D85A30; color: #D85A30; background: #FAECE7; animation: pulse 1.5s infinite; }
   @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(216,90,48,0.2)} 50%{box-shadow:0 0 0 6px rgba(216,90,48,0)} }
-  .mic-icon { width: 16px; height: 16px; }
 
   .voice-log {
-    background: var(--color-background-secondary);
-    border: 0.5px solid var(--color-border-tertiary);
-    border-radius: var(--border-radius-md);
-    padding: 12px 16px;
-    font-size: 13px; color: var(--color-text-secondary);
-    min-height: 44px; margin-bottom: 1.5rem;
-    transition: all 0.3s;
+    background: #f0f0ec; border: 1px solid #ddd; border-radius: 8px;
+    padding: 12px 16px; font-size: 13px; color: #666;
+    min-height: 44px; margin-bottom: 1.5rem; transition: all 0.3s;
     display: flex; align-items: center; gap: 8px;
   }
-  .voice-log.active { color: var(--color-text-primary); background: var(--color-background-primary); border-color: var(--color-border-primary); }
+  .voice-log.active { color: #1a1a1a; background: white; border-color: #aaa; }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
 
   .device-card {
-    background: var(--color-background-primary);
-    border: 0.5px solid var(--color-border-tertiary);
-    border-radius: var(--border-radius-lg);
-    padding: 1.25rem 1rem;
-    cursor: pointer; transition: all 0.25s;
-    position: relative; overflow: hidden;
+    background: white; border: 1px solid #e0e0e0; border-radius: 14px;
+    padding: 1.25rem 1rem; cursor: pointer; transition: all 0.25s; position: relative;
   }
-  .device-card:hover { border-color: var(--color-border-secondary); }
-  .device-card.on { border-color: transparent; }
+  .device-card:hover { border-color: #bbb; }
   .device-card.on.light { background: #EEEDFE; border-color: #AFA9EC; }
-  .device-card.on.fan { background: #E1F5EE; border-color: #5DCAA5; }
-  .device-card.on.ac { background: #E6F1FB; border-color: #85B7EB; }
-  .device-card.on.tv { background: #FAEEDA; border-color: #EF9F27; }
-  .device-card.on.heater { background: #FAECE7; border-color: #F0997B; }
+  .device-card.on.fan   { background: #E1F5EE; border-color: #5DCAA5; }
+  .device-card.on.ac    { background: #E6F1FB; border-color: #85B7EB; }
+  .device-card.on.tv    { background: #FAEEDA; border-color: #EF9F27; }
+  .device-card.on.heater{ background: #FAECE7; border-color: #F0997B; }
   .device-card.on.music { background: #FBEAF0; border-color: #ED93B1; }
 
   .device-icon { font-size: 28px; margin-bottom: 10px; display: block; }
-  .device-name { font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
-  .device-status { font-size: 12px; color: var(--color-text-secondary); }
-  .device-card.on .device-status { color: #0F6E56; }
-  .device-card.on.ac .device-status { color: #185FA5; }
-  .device-card.on.tv .device-status { color: #854F0B; }
+  .device-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .device-status { font-size: 12px; color: #888; }
+  .device-card.on.fan    .device-status { color: #0F6E56; }
+  .device-card.on.ac     .device-status { color: #185FA5; }
+  .device-card.on.tv     .device-status { color: #854F0B; }
   .device-card.on.heater .device-status { color: #993C1D; }
-  .device-card.on.music .device-status { color: #993556; }
-  .device-card.on.light .device-status { color: #534AB7; }
+  .device-card.on.music  .device-status { color: #993556; }
+  .device-card.on.light  .device-status { color: #534AB7; }
 
-  .toggle { position: absolute; top: 12px; right: 12px; width: 32px; height: 18px; background: var(--color-border-tertiary); border-radius: 9px; transition: background 0.2s; }
+  .toggle { position: absolute; top: 12px; right: 12px; width: 32px; height: 18px; background: #ccc; border-radius: 9px; transition: background 0.2s; }
   .toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; border-radius: 50%; background: white; transition: transform 0.2s; }
-  .device-card.on .toggle { background: #1D9E75; }
-  .device-card.on.ac .toggle { background: #378ADD; }
-  .device-card.on.tv .toggle { background: #BA7517; }
-  .device-card.on.heater .toggle { background: #D85A30; }
-  .device-card.on.music .toggle { background: #D4537E; }
-  .device-card.on.light .toggle { background: #7F77DD; }
+  .device-card.on             .toggle { background: #1D9E75; }
+  .device-card.on.ac          .toggle { background: #378ADD; }
+  .device-card.on.tv          .toggle { background: #BA7517; }
+  .device-card.on.heater      .toggle { background: #D85A30; }
+  .device-card.on.music       .toggle { background: #D4537E; }
+  .device-card.on.light       .toggle { background: #7F77DD; }
   .device-card.on .toggle::after { transform: translateX(14px); }
 
-  .slider-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
-  .slider-row label { font-size: 12px; color: var(--color-text-secondary); white-space: nowrap; }
-  .slider-row input[type=range] { flex: 1; }
-  .slider-val { font-size: 12px; font-weight: 500; min-width: 30px; text-align: right; color: var(--color-text-primary); }
+  .slider-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .slider-row label { font-size: 12px; color: #888; white-space: nowrap; }
+  .slider-row input[type=range] { flex: 1; accent-color: #378ADD; }
+  .slider-val { font-size: 12px; font-weight: 600; min-width: 30px; text-align: right; }
 
   .fan-speed { margin-top: 8px; display: flex; gap: 6px; }
-  .speed-btn { font-size: 11px; padding: 3px 8px; border-radius: 20px; border: 0.5px solid var(--color-border-secondary); background: transparent; cursor: pointer; color: var(--color-text-secondary); transition: all 0.15s; }
+  .speed-btn { font-size: 11px; padding: 3px 8px; border-radius: 20px; border: 1px solid #ccc; background: transparent; cursor: pointer; color: #888; transition: all 0.15s; }
   .speed-btn.active { background: #1D9E75; border-color: #1D9E75; color: white; }
 
-  .cmd-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 0.5rem; }
-  .chip { font-size: 12px; padding: 6px 12px; border-radius: 20px; border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); color: var(--color-text-secondary); cursor: pointer; transition: all 0.15s; }
-  .chip:hover { border-color: var(--color-border-primary); color: var(--color-text-primary); }
-
-  .section-label { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 10px; }
+  .section-label { font-size: 13px; color: #888; margin-bottom: 10px; font-weight: 500; }
+  .cmd-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-size: 12px; padding: 6px 14px; border-radius: 20px; border: 1px solid #ddd; background: white; color: #666; cursor: pointer; transition: all 0.15s; }
+  .chip:hover { border-color: #aaa; color: #1a1a1a; }
 
   @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
   .fan-spinning { animation: spin 1.5s linear infinite; display: inline-block; }
 </style>
-
+</head>
+<body>
 <div class="room">
-  <h2 class="sr-only">Smart room controller with voice command support</h2>
-
   <div class="header">
     <div>
       <span class="status-dot"></span>
       <span class="room-name">Living Room</span>
     </div>
     <button class="mic-btn" id="micBtn" onclick="toggleListening()">
-      <svg class="mic-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
         <rect x="5" y="1" width="6" height="9" rx="3"/>
         <path d="M3 8c0 2.76 2.24 5 5 5s5-2.24 5-5"/>
         <line x1="8" y1="13" x2="8" y2="15"/>
@@ -132,54 +124,29 @@ const devices = [
 ];
 
 const cmds = [
-  'Turn on all lights','Turn off the fan','Set AC to 22°C',
+  'Turn on all lights','Turn off the fan','Set AC to 22 degrees',
   'Turn on the TV','Set light brightness to 50%','Turn off everything',
-  'Fan speed high','Play some music','Set heater to 25°C',
+  'Fan speed high','Play some music','Set heater to 25 degrees',
 ];
 
-let listening = false;
-let recognition = null;
+let listening = false, recognition = null;
 
 function renderDevices() {
   const grid = document.getElementById('deviceGrid');
   grid.innerHTML = devices.map(d => {
     let extra = '';
-    if(d.type === 'light') extra = `
-      <div class="slider-row">
-        <label>Brightness</label>
-        <input type="range" min="10" max="100" step="1" value="${d.brightness}" onchange="setBrightness('${d.id}',this.value)" ${d.on?'':'disabled'}>
-        <span class="slider-val">${d.brightness}%</span>
-      </div>`;
-    if(d.type === 'fan') extra = `
-      <div class="fan-speed">
-        ${['low','medium','high'].map(s=>`<button class="speed-btn ${d.speed===s&&d.on?'active':''}" onclick="setFanSpeed('${s}')">${s}</button>`).join('')}
-      </div>`;
-    if(d.type === 'ac') extra = `
-      <div class="slider-row">
-        <label>Temp</label>
-        <input type="range" min="16" max="30" step="1" value="${d.temp}" onchange="setTemp('ac',this.value)" ${d.on?'':'disabled'}>
-        <span class="slider-val">${d.temp}°C</span>
-      </div>`;
-    if(d.type === 'music') extra = `
-      <div class="slider-row">
-        <label>Volume</label>
-        <input type="range" min="0" max="100" step="1" value="${d.volume}" onchange="setVolume(this.value)" ${d.on?'':'disabled'}>
-        <span class="slider-val">${d.volume}%</span>
-      </div>`;
-    if(d.type === 'heater') extra = `
-      <div class="slider-row">
-        <label>Temp</label>
-        <input type="range" min="16" max="30" step="1" value="${d.temp}" onchange="setTemp('heater',this.value)" ${d.on?'':'disabled'}>
-        <span class="slider-val">${d.temp}°C</span>
-      </div>`;
-
-    const fanIcon = d.type==='fan'&&d.on ? `<span class="fan-spinning" style="font-size:28px;margin-bottom:10px;display:block">${d.icon}</span>` : `<span class="device-icon">${d.icon}</span>`;
-
+    if(d.type==='light') extra=`<div class="slider-row"><label>Brightness</label><input type="range" min="10" max="100" step="1" value="${d.brightness}" onchange="setBrightness('${d.id}',this.value)" ${d.on?'':'disabled'}><span class="slider-val">${d.brightness}%</span></div>`;
+    if(d.type==='fan') extra=`<div class="fan-speed">${['low','medium','high'].map(s=>`<button class="speed-btn ${d.speed===s&&d.on?'active':''}" onclick="setFanSpeed('${s}')">${s}</button>`).join('')}</div>`;
+    if(d.type==='ac') extra=`<div class="slider-row"><label>Temp</label><input type="range" min="16" max="30" step="1" value="${d.temp}" onchange="setTemp('ac',this.value)" ${d.on?'':'disabled'}><span class="slider-val">${d.temp}°C</span></div>`;
+    if(d.type==='music') extra=`<div class="slider-row"><label>Volume</label><input type="range" min="0" max="100" step="1" value="${d.volume}" onchange="setVolume(this.value)" ${d.on?'':'disabled'}><span class="slider-val">${d.volume}%</span></div>`;
+    if(d.type==='heater') extra=`<div class="slider-row"><label>Temp</label><input type="range" min="16" max="30" step="1" value="${d.temp}" onchange="setTemp('heater',this.value)" ${d.on?'':'disabled'}><span class="slider-val">${d.temp}°C</span></div>`;
+    const fanIcon = d.type==='fan'&&d.on
+      ? `<span class="fan-spinning" style="font-size:28px;margin-bottom:10px;display:block">${d.icon}</span>`
+      : `<span class="device-icon">${d.icon}</span>`;
     return `<div class="device-card ${d.type} ${d.on?'on':''}" onclick="toggleDevice('${d.id}')">
-      <div class="toggle"></div>
-      ${fanIcon}
+      <div class="toggle"></div>${fanIcon}
       <div class="device-name">${d.name}</div>
-      <div class="device-status">${d.on ? getStatus(d) : 'Off'}</div>
+      <div class="device-status">${d.on?getStatus(d):'Off'}</div>
       ${extra}
     </div>`;
   }).join('');
@@ -201,56 +168,34 @@ function toggleDevice(id) {
   renderDevices();
 }
 
-function setBrightness(id,val) {
-  const d = devices.find(x=>x.id===id);
-  d.brightness = parseInt(val);
-  renderDevices();
-}
-function setFanSpeed(s) {
-  const d = devices.find(x=>x.id==='fan');
-  d.speed = s; d.on = true;
-  showLog(`Fan speed set to ${s}`); renderDevices();
-}
-function setTemp(id,val) {
-  const d = devices.find(x=>x.id===id);
-  d.temp = parseInt(val); renderDevices();
-}
-function setVolume(val) {
-  const d = devices.find(x=>x.id==='music');
-  d.volume = parseInt(val); renderDevices();
-}
+function setBrightness(id,val) { const d=devices.find(x=>x.id===id); d.brightness=parseInt(val); renderDevices(); }
+function setFanSpeed(s) { const d=devices.find(x=>x.id==='fan'); d.speed=s; d.on=true; showLog(`Fan speed set to ${s}`); renderDevices(); }
+function setTemp(id,val) { const d=devices.find(x=>x.id===id); d.temp=parseInt(val); renderDevices(); }
+function setVolume(val) { const d=devices.find(x=>x.id==='music'); d.volume=parseInt(val); renderDevices(); }
 
 function showLog(msg, active=true) {
-  const log = document.getElementById('voiceLog');
   document.getElementById('voiceText').textContent = msg;
-  log.className = 'voice-log' + (active?' active':'');
+  document.getElementById('voiceLog').className = 'voice-log' + (active?' active':'');
 }
 
 function processCommand(cmd) {
   const c = cmd.toLowerCase();
   let acted = false;
-
-  if(c.includes('turn off everything') || c.includes('off everything') || c.includes('all off')) {
+  if(c.includes('turn off everything')||c.includes('off everything')||c.includes('all off')) {
     devices.forEach(d=>d.on=false); showLog('All devices turned off'); acted=true;
-  } else if(c.includes('turn on all') || c.includes('all on')) {
+  } else if(c.includes('turn on all')||c.includes('all on')) {
     devices.forEach(d=>d.on=true); showLog('All devices turned on'); acted=true;
   } else {
     devices.forEach(d => {
       const names = {light:['light','lights'],fan:['fan'],ac:['ac','air conditioner','air con','aircon'],tv:['tv','television'],heater:['heater'],music:['music','speaker']};
-      const aliases = names[d.type] || [];
-      const matches = aliases.some(a => c.includes(a));
-      if(!matches) return;
-
-      if(c.includes('turn on') || c.includes('switch on')) { d.on=true; showLog(`${d.name} turned on`); acted=true; }
-      else if(c.includes('turn off') || c.includes('switch off')) { d.on=false; showLog(`${d.name} turned off`); acted=true; }
-
+      if(!(names[d.type]||[]).some(a=>c.includes(a))) return;
+      if(c.includes('turn on')||c.includes('switch on')) { d.on=true; showLog(`${d.name} turned on`); acted=true; }
+      else if(c.includes('turn off')||c.includes('switch off')) { d.on=false; showLog(`${d.name} turned off`); acted=true; }
       const bMatch = c.match(/(\d+)\s*(%|percent)/);
-      if(bMatch && d.type==='light') { d.brightness=Math.min(100,parseInt(bMatch[1])); d.on=true; showLog(`Light brightness set to ${d.brightness}%`); acted=true; }
-      if(bMatch && d.type==='music') { d.volume=Math.min(100,parseInt(bMatch[1])); d.on=true; showLog(`Volume set to ${d.volume}%`); acted=true; }
-
+      if(bMatch&&d.type==='light') { d.brightness=Math.min(100,parseInt(bMatch[1])); d.on=true; showLog(`Light brightness set to ${d.brightness}%`); acted=true; }
+      if(bMatch&&d.type==='music') { d.volume=Math.min(100,parseInt(bMatch[1])); d.on=true; showLog(`Volume set to ${d.volume}%`); acted=true; }
       const tMatch = c.match(/(\d+)\s*(°c|degree|degrees)/i);
-      if(tMatch && (d.type==='ac'||d.type==='heater')) { d.temp=parseInt(tMatch[1]); d.on=true; showLog(`${d.name} set to ${d.temp}°C`); acted=true; }
-
+      if(tMatch&&(d.type==='ac'||d.type==='heater')) { d.temp=parseInt(tMatch[1]); d.on=true; showLog(`${d.name} set to ${d.temp}°C`); acted=true; }
       if(d.type==='fan') {
         if(c.includes('high')) { d.speed='high'; d.on=true; showLog('Fan speed set to high'); acted=true; }
         else if(c.includes('medium')) { d.speed='medium'; d.on=true; showLog('Fan speed set to medium'); acted=true; }
@@ -258,19 +203,15 @@ function processCommand(cmd) {
       }
     });
   }
-
-  if(!acted) showLog(`Could not understand: "${cmd}". Try "Turn on the fan"`, true);
+  if(!acted) showLog(`Could not understand: "${cmd}". Try "Turn on the fan"`);
   renderDevices();
 }
 
 function toggleListening() {
   if(listening) { stopListening(); return; }
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SpeechRecognition) {
-    showLog('Voice not supported in this browser. Click a command chip below!');
-    return;
-  }
-  recognition = new SpeechRecognition();
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR) { showLog('Voice not supported in this browser. Click a command chip below!'); return; }
+  recognition = new SR();
   recognition.lang = 'en-US';
   recognition.interimResults = true;
   recognition.onresult = e => {
@@ -303,3 +244,5 @@ function renderChips() {
 renderDevices();
 renderChips();
 </script>
+</body>
+</html>
